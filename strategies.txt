@@ -1,0 +1,13 @@
+to detect 8088/186/286 and 386+: check EFLAGS.VM, if it's 1, it's in V86 mode that only supported in 386 and later.
+386 and 486: try to enable cache. if it fails, it's 386. if it succeed, 486.
+
+
+V20 and V30 is drop-in replacement for some CPUs. it may support some advanced feature...
+
+FPUs are largely unknown!!!
+
+for 486, earlier model doesn't have support for CPUID. maybe check for that.
+
+check for FLAGS.bit15-11 as well, that it may change on 8088/186 and 286.
+
+Model check may require to understand PIT...
