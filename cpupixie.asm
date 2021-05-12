@@ -12,11 +12,11 @@ _addressToHex:
 	mov di, [bp+6] ; string
 	add di, 4
 	mov ax, [bp+4] ; num
-	mov bx, 16
-	mov cx, 4
+	mov bx, 16 
+	mov cx, [bp+8] ; loop counter
 	
 	processloop:
-		div bx
+		div bx 
 		cmp dx, 9
 		jg handleHex
 		add dl, 0x30
@@ -47,7 +47,7 @@ detect_v86:
 	mov dx, v86_debug
 	call printstr
 	smsw ax
-	and eax,1 ; CR0.PE = 1 = V86 MODE.
+	and eax,1 ; CR0.PE = 1 = V86 MODE (and is in protected mode...).
 	pop bp
 	ret
 
@@ -79,6 +79,14 @@ printstr:
 	ret
 
 _entry:
+	push 4 ; Loop counter bp+8
+	push teststr ; bp+6 is where string would be written into. 8088 does not have a ROM and RAM discrimination.
+	;mov ax, [_addressToHex] ; bp+4
+	push 0x7E0E
+	call _addressToHex
+	mov dx,teststr
+	call printstr
+	
 	mov dx, helloworld
 	call printstr
 	call detect_v86 ; Returning AX value that should contain V86 or not
@@ -87,16 +95,8 @@ _entry:
 	mov dx, isv86 ; else, print
 	call printstr
 
-	
-
 _exit:
-	push teststr ; bp+6 is where string would be written into. 8088 does not have a ROM and RAM discrimination.
-	mov ax, [_addressToHex]
-	push ax
-	call _addressToHex
-	mov dx,teststr
-	call printstr
-	ret
+	int 0x20
 
 section .data
 helloworld: db "Hello World from NASM?", 0x0A, 0x0D , '$'
