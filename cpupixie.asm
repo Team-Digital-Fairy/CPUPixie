@@ -3,6 +3,7 @@ org 0x100
 
 jmp _entry ; call entry so I can main()
 
+;NCommander's itoa function.
 _addressToHex:
 	push bp
 	mov bp,sp
@@ -51,6 +52,67 @@ detect_v86:
 	pop bp
 	ret
 
+check_acflag:
+	push bp
+	mov bp,sp
+	
+	pushfd
+	pop eax ; read EFLAGS
+	mov ecx, eax ; save EFLAGS to ECX
+	
+	push 8
+	push teststr
+	mov ax, [check_acflag_string1] ; bp+4
+	push eax
+	call _addressToHex
+	mov dx,teststr
+	call printstr
+	
+	
+	xor eax, 0x40000 ; AC bit in EFLAGS
+	push eax ; save modified EFLAGS
+	popfd ; set eflags
+	
+	pushfd ; get new ELFLAGS
+	pop eax ; store EFLAGS into EAX
+	
+	push 8
+	push teststr
+	mov ax, [check_acflag_string1] ; bp+4
+	push eax
+	call _addressToHex
+	mov dx,teststr
+	call printstr
+	
+	xor eax, ecx ; cannot toggle AC? it's 386.
+	mov ax, 0
+	jz _end_check_acflag ; it's 386.
+	push ecx ; restore EFLAGS
+	popfd
+	mov ax, 1; it's 486.
+_end_check_acflag:
+	pop bp
+	ret
+	
+	
+check_8088286:
+	push bp
+	mov bp, sp
+	pushf
+	pop ax
+	mov cx, ax
+	and ax, 0x0fff
+	push ax
+	popf
+	
+	pushf
+	pop ax
+	and ax, 0xf000
+	cmp ax, 0xf000
+	je _detect8088
+	
+	
+	
 
 check_386486:
 	push bp
@@ -59,6 +121,15 @@ check_386486:
  	xor eax,eax
 	mov eax,cr0 ; get current CR0.
 	mov ebx,eax ; Copy CR0 for comparsion
+	and eax, 0xBFFF ; disable bit 30
+	mov cr0,eax ; Disable caching. (MAYBE INCONSISTENT)
+	nop
+	nop
+	nop
+	nop ; Safeguard.
+	mov eax,cr0 ; Read back.
+	
+	
 	
 
 	pop bp
@@ -72,35 +143,52 @@ printstr:
 	push ax
 	xor ax,ax ; Clear AX
 	mov ah, 9 ; calling 0x0900 on 0x21: STDOUT
-	;mov dx,bx ; Pointer is on BX
 	int 0x21
 	pop ax
 	pop bp ; Restore BP (aka leave)
 	ret
 
 _entry:
-	push 4 ; Loop counter bp+8
-	push teststr ; bp+6 is where string would be written into. 8088 does not have a ROM and RAM discrimination.
-	;mov ax, [_addressToHex] ; bp+4
-	push 0x7E0E
-	call _addressToHex
-	mov dx,teststr
-	call printstr
-	
 	mov dx, helloworld
 	call printstr
 	call detect_v86 ; Returning AX value that should contain V86 or not
-	cmp ax,0 ; if it's not running on V86 mode (PE == 0)
-	je _exit ; Exit
+	cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
+	je _exit ; Exit.
 	mov dx, isv86 ; else, print
 	call printstr
-
+	call check_acflag
+	cmp ax,0 ; if ax == 0
+	je print386
+print486:
+	mov dx, cpu486
+	call printstr
+	jmp _exit
+	
+print386:
+	mov dx, cpu386
+	call printstr
+	jmp _exit
+	
 _exit:
-	int 0x20
+	mov ax, 0x4C00
+	int 0x21
+	nop
+
+; Memo
+	;push 4 ; Loop counter bp+8
+	;push teststr ; bp+6 is where string would be written into. 8088 does not have a ROM and RAM discrimination.
+	;mov ax, [_addressToHex] ; bp+4
+	;push 0x7E0E
+	;call _addressToHex
+	;mov dx,teststr
+	;call printstr
+
 
 section .data
 helloworld: db "Hello World from NASM?", 0x0A, 0x0D , '$'
 isv86: db "This PC is running under V86 mode.", 0x0A, 0x0D, '$'
 v86_debug: db "DBG: in detect_v86", 0x0A, 0x0D, '$'
+check_acflag_string1: db ` XXXXXXXX\r\n$`
 teststr: db ` XXXX\r\n$`
-
+cpu386: db `this CPU is 386\r\n$`
+cpu486: db `this CPU is 486\r\n$`

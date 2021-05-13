@@ -11,3 +11,11 @@ for 486, earlier model doesn't have support for CPUID. maybe check for that.
 check for FLAGS.bit15-11 as well, that it may change on 8088/186 and 286.
 
 Model check may require to understand PIT...
+
+- 0x4c00: int 21 - Exit Program
+
+- memory constraint? 
+
+9x: acts like HIMEM 
+NT: acts like... HIMEM or V86.
+OS/2: ???
