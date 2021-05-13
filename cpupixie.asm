@@ -109,8 +109,24 @@ check_8088286:
 	pop ax
 	and ax, 0xf000
 	cmp ax, 0xf000
-	je _detect8088
+	je _detected8088
 	
+	or cx, 0x0f000
+	push cx
+	popf
+	pushf
+	pop ax
+	and ax
+	jz _detected286
+	; if it's non zero. fall through.
+_detected8088:
+	mov ax, 0 ; 0 = 8086/8088/186
+	pop bp
+	ret
+_detected286:
+	mov ax, 1 ; 1 = 286
+	pop bp
+	ret
 	
 	
 
