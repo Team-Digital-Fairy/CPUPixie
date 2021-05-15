@@ -110,6 +110,7 @@ check_8088286:
 	and ax, 0xf000
 	cmp ax, 0xf000
 	je _detected8088
+
 	
 	or cx, 0x0f000
 	push cx
@@ -128,11 +129,30 @@ _detected286:
 	pop bp
 	ret
 	
+_detect:
+	push 		bp
+	mov 		bp, sp
+	pushf					; Push the original flags 
+	pop 		ax			; 
+	mov 		cx, ax			; 
+	and 		ax, 0x0fff 		; clear bits 12-15 in FLAGS
+	push 		ax			; save new FLAGS value on stack
+	popf					; replace current FLAGS value
+	pushf					; Get new flags
+	pop 		ax			; AX <- flags
+	and 		ax, 0xf000 		; if bits 12-15 are set, then
+	cmp 		ax, 0xf000 		; 
+	je 		_detect8088		; we only have an 8086/186
 	
-
-check_386486:
-	push bp
-	mov bp, sp
+	or		cx, 0xf000		; try to set bits 12-15
+	push 		cx			; save new flags on the stack
+	popf 					; replace current flags
+	pushf 					; get new flags
+	pop 		ax
+	and 		ax, 0xf000  		; if bits 12-15 are clear
+	jz 		_detected286		; if no bits set, processor is a 286
+	
+_do_386_and_up:
 	; try disabling and enable cache register in CR0
  	xor eax,eax
 	mov eax,cr0 ; get current CR0.
@@ -165,6 +185,10 @@ printstr:
 	ret
 
 _entry:
+		; are we in V86 mode?
+		; if so, jump to _do_386_and_up
+		; otherwise jump to _detect
+		
 	mov dx, helloworld
 	call printstr
 	call detect_v86 ; Returning AX value that should contain V86 or not
