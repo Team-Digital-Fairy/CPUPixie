@@ -93,42 +93,7 @@ check_acflag:
 _end_check_acflag:
 	pop bp
 	ret
-	
-	
-check_8088286:
-	push bp
-	mov bp, sp
-	pushf
-	pop ax
-	mov cx, ax
-	and ax, 0x0fff
-	push ax
-	popf
-	
-	pushf
-	pop ax
-	and ax, 0xf000
-	cmp ax, 0xf000
-	je _detected8088
 
-	
-	or cx, 0x0f000
-	push cx
-	popf
-	pushf
-	pop ax
-	and ax
-	jz _detected286
-	; if it's non zero. fall through.
-_detected8088:
-	mov ax, 0 ; 0 = 8086/8088/186
-	pop bp
-	ret
-_detected286:
-	mov ax, 1 ; 1 = 286
-	pop bp
-	ret
-	
 _detect:
 	push 		bp
 	mov 		bp, sp
@@ -142,7 +107,7 @@ _detect:
 	pop 		ax			; AX <- flags
 	and 		ax, 0xf000 		; if bits 12-15 are set, then
 	cmp 		ax, 0xf000 		; 
-	je 		_detect8088		; we only have an 8086/186
+	je 		_detected8088		; we only have an 8086/186 TODO: Further check 8088/186
 	
 	or		cx, 0xf000		; try to set bits 12-15
 	push 		cx			; save new flags on the stack
@@ -151,7 +116,15 @@ _detect:
 	pop 		ax
 	and 		ax, 0xf000  		; if bits 12-15 are clear
 	jz 		_detected286		; if no bits set, processor is a 286
-	
+_detected8088:
+	mov ax, 0 ; 0 = 8086/8088/186
+	pop bp
+	ret
+_detected286:
+	mov ax, 1 ; 1 = 286
+	pop bp
+	ret	
+
 _do_386_and_up:
 	; try disabling and enable cache register in CR0
  	xor eax,eax
@@ -184,6 +157,10 @@ printstr:
 	pop bp ; Restore BP (aka leave)
 	ret
 
+_detected_realmode:
+	jmp _exit
+
+
 _entry:
 		; are we in V86 mode?
 		; if so, jump to _do_386_and_up
@@ -193,7 +170,7 @@ _entry:
 	call printstr
 	call detect_v86 ; Returning AX value that should contain V86 or not
 	cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
-	je _exit ; Exit.
+	je _detected_realmode ; Exit.
 	mov dx, isv86 ; else, print
 	call printstr
 	call check_acflag
