@@ -158,6 +158,8 @@ printstr:
 	ret
 
 _detected_realmode:
+	mov dx, v86_not_found
+	call printstr
 	jmp _exit
 
 
@@ -205,6 +207,7 @@ section .data
 helloworld: db "Hello World from NASM?", 0x0A, 0x0D , '$'
 isv86: db "This PC is running under V86 mode.", 0x0A, 0x0D, '$'
 v86_debug: db "DBG: in detect_v86", 0x0A, 0x0D, '$'
+v86_not_found: db `This PC is running under non-V86 mode\r\n$`
 check_acflag_string1: db ` XXXXXXXX\r\n$`
 teststr: db ` XXXX\r\n$`
 cpu386: db `this CPU is 386\r\n$`
