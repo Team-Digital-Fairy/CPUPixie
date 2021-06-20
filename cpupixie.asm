@@ -170,11 +170,11 @@ _entry:
 		
 	mov dx, helloworld
 	call printstr
-	call detect_v86 ; Returning AX value that should contain V86 or not
-	cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
-	je _detected_realmode ; Exit.
-	mov dx, isv86 ; else, print
-	call printstr
+	;call detect_v86 ; Returning AX value that should contain V86 or not
+	;cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
+	;je _detected_realmode ; Exit.
+	;mov dx, isv86 ; else, print
+	;call printstr
 	call check_acflag
 	cmp ax,0 ; if ax == 0
 	je print386
