@@ -162,7 +162,11 @@ _detected_realmode:
 	call printstr
 	jmp _exit
 
-
+_8086_detected:
+	mov dx, cpu8086
+	call printstr
+	jmp _exit
+	
 _entry:
 		; are we in V86 mode?
 		; if so, jump to _do_386_and_up
@@ -170,6 +174,12 @@ _entry:
 		
 	mov dx, helloworld
 	call printstr
+	
+_detect_8086:
+	mov bx, 0
+	shr bx, _8086_detected ; !this trashes BX!
+	; Interestingly, this turn into JMP rel8 in 8086. so...
+	
 	;call detect_v86 ; Returning AX value that should contain V86 or not
 	;cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
 	;je _detected_realmode ; Exit.
@@ -178,6 +188,8 @@ _entry:
 	call check_acflag
 	cmp ax,0 ; if ax == 0
 	je print386
+	
+
 print486:
 	mov dx, cpu486
 	call printstr
@@ -210,5 +222,6 @@ v86_debug: db "DBG: in detect_v86", 0x0A, 0x0D, '$'
 v86_not_found: db `This PC is running under non-V86 mode\r\n$`
 check_acflag_string1: db ` XXXXXXXX\r\n$`
 teststr: db ` XXXX\r\n$`
+cpu8086: db `This CPU is 8086/8088.\r\n$`
 cpu386: db `this CPU is 386\r\n$`
 cpu486: db `this CPU is 486\r\n$`
