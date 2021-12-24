@@ -39,10 +39,17 @@ _addressToHex:
 	pop bp
 	ret
 
+; Print String function: 
+; Push DX the pointer in DS
+; call this.
 
-
-
-
+printstr:
+	push ax
+	xor ax,ax 			; Clear AX
+	mov ah, 9 			; calling 0x0900 on 0x21: STDOUT
+	int 0x21
+	pop ax
+	ret
 
 check_acflag:
 	push bp
@@ -88,13 +95,27 @@ _end_check_acflag:
 	pop bp
 	ret
 
-
-printstr:
-	push ax
-	xor ax,ax 			; Clear AX
-	mov ah, 9 			; calling 0x0900 on 0x21: STDOUT
-	int 0x21
+check_iopl:
+	push bp
+	mov bp,sp
+	; Retrive flag
+	xor ax,ax ; Clear AX
+	pushf
 	pop ax
+	mov cx, ax ; Copy current FLAG to cx, just in case.
+	; draw on screen
+	push 4
+	push teststr
+	mov ax, [check_iopl]
+	push ax
+	call _addressToHex
+	mov dx,teststr
+	call printstr
+	
+	push cx
+	popf
+	
+	pop bp
 	ret
 
 
@@ -112,47 +133,45 @@ _detect_8086:
 	mov ax, _8086_detected 
 	push ax				; Get the return address onto the stack for RETN
 	mov bx, 0
-	shr bx, (_8086c_detected - $)
-						; !this trashes BX!
-	; This assembles into C1 EB [imm8].
-	; C1 is an invalid instruction (theoretically), but it is actually
-	; an undocumented equivalent to RETN.
-	; EB is a documented JMP rel8, so clones that don't copy the C1 functionality
-	; Will fall into this.
+	shr bx, (_8086c_detected - $) ; !this trashes BX!
+						; This assembles into C1 EB [imm8].
+						; C1 is an invalid instruction (theoretically), but it is actually
+						; an undocumented equivalent to RETN.
+						; EB is a documented JMP rel8, so clones that don't copy the C1 functionality
+						; Will fall into this.
 	pop ax 				; The 8086 check passed, so we will get this off the stack
-						; OLD COMMENTS
-							;call detect_v86 ; Returning AX value that should contain V86 or not
-							;cmp ax,0 ; if it's not running on V86 mode (It's not in Protected Mode...)
-							;je _detected_realmode ; Exit.
-							;mov dx, isv86 ; else, print
-							;call printstr
+
+	; also this means that this is atleast 186.
+	call check_iopl
 	call check_acflag
-	cmp ax,0 ; if ax == 0
-	je print386
+	cmp ax,1 ; if ax == 1; that this is 486. because AC exists.
+	je print486
+
+print386:
+	mov dx, cpu386
+	call printstr
+	jmp _exit
 
 print486:
 	mov dx, cpu486
 	call printstr
 	jmp _exit
 
-nop						; Nop slide, because we're jumping 3 bytes too early
-nop						; Keep in mind, this MUST be within 255 bytes of shr bx, (_8086c_detected - $)
-nop 					; Since that is a jmp [imm8]
-nop
+_nop_slide_buffer:
+	nop						; Nop slide, because we're jumping 3 bytes too early
+	nop						; Keep in mind, this MUST be within 255 bytes of shr bx, (_8086c_detected - $)
+	nop 					; Since that is a jmp [imm8]
+	nop
 _8086c_detected:
 	mov dx, cpu8086c	; Clones may not interpret C1 as RETN, we can take advantage of that
 	call printstr 
-	jmp _exit 
-
+	jmp _exit
 _8086_detected:
 	mov dx, cpu8086		; The official 8086 interpretes C1 as RETN
 	call printstr
 	jmp _exit
 
-print386:
-	mov dx, cpu386
-	call printstr
-	jmp _exit
+
 	
 _exit:
 	mov ax, 0x4C00
@@ -177,7 +196,11 @@ v86_not_found: 	db `This PC is running under non-V86 mode\r\n$`
 check_acflag_string1: 
 				db ` XXXXXXXX\r\n$`
 teststr: 		db ` XXXX\r\n$`
-cpu8086: 		db `This CPU is an 8088.\r\n$`
-cpu8086c:		db `This CPU is an 8088 clone.\r\n$`
-cpu386: 		db `this CPU is a 386.\r\n$`
-cpu486: 		db `this CPU is a 486.\r\n$`
+;teststr4: 		db ` XXXX\r\n$`
+cpu8086: 		db `this CPU is an 8088.\r\n$`
+cpu8086c:		db `this CPU is an 8088 clone.\r\n$`
+cpu186:			db `this CPU is an 186.\r\n$`
+cpu286:			db `this CPU is an 286.\r\n$`
+cpu386: 		db `this CPU is an 386.\r\n$`
+cpu486: 		db `this CPU is an 486.\r\n$`
+cpu486_cpuid:	db `this CPU is an 486,  CPUID capable.\r\n$`
