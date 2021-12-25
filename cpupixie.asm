@@ -121,14 +121,12 @@ check_iopl:
 
 	
 _entry:
-						; OLD COMMENTS
-							; are we in V86 mode?
-							; if so, jump to _do_386_and_up
-							; otherwise jump to _detect
-		
 	mov dx, helloworld
 	call printstr
-	
+	mov dx, digifairy_intro
+	call printstr
+	mov dx,debug1
+	call printstr
 _detect_8086:
 	mov ax, _8086_detected 
 	push ax				; Get the return address onto the stack for RETN
@@ -189,10 +187,13 @@ _exit:
 
 
 section .data
-helloworld: 	db "Hello World from NASM?", 0x0A, 0x0D , '$'
-isv86: 			db "This PC is running under V86 mode.", 0x0A, 0x0D, '$'
-v86_debug: 		db "DBG: in detect_v86", 0x0A, 0x0D, '$'
-v86_not_found: 	db `This PC is running under non-V86 mode\r\n$`
+; 80x25. add nesscery new lines if you wanna. print big text.
+			   ;    0123456789012345678901234
+helloworld: 	db `Hello World from NASM.\r\n$`
+digifairy_intro:db `Made with <3\nfrom Team Digital Fairy!\r\n"Vespire:Our highness says\r\nthat you should have a great day!"\r\n$`
+;isv86: 			db `This PC is running under V86 mode.\r\n$`
+;v86_debug: 		db `DBG: in detect_v86\r\n$`
+;v86_not_found: 	db `This PC is running under non-V86 mode\r\n$`
 check_acflag_string1: 
 				db ` XXXXXXXX\r\n$`
 teststr: 		db ` XXXX\r\n$`
@@ -204,3 +205,5 @@ cpu286:			db `this CPU is an 286.\r\n$`
 cpu386: 		db `this CPU is an 386.\r\n$`
 cpu486: 		db `this CPU is an 486.\r\n$`
 cpu486_cpuid:	db `this CPU is an 486,  CPUID capable.\r\n$`
+
+debug1:			db `debug: running 8086 detection\r\n$`
