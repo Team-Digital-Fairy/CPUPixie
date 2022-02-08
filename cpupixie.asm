@@ -3,7 +3,7 @@ org 0x100
 
 jmp _entry ; call entry so I can main()
 
-;NCommander's itoa function.
+;NCommander's itoa function	
 _addressToHex:
 	push bp
 	mov bp,sp
@@ -59,32 +59,16 @@ check_acflag:
 	pop eax 			; read EFLAGS
 	mov ecx, eax 		; save EFLAGS to ECX
 	
-	push 8
-	push teststr
-	mov ax, [check_acflag_string1] 
-						; bp+4
-	push eax
-	call _addressToHex
-	mov dx,teststr
-	call printstr
-	
-	
 	xor eax, 0x40000 	; AC bit in EFLAGS
 	push eax 			; save modified EFLAGS
 	popfd 				; set eflags
 	
 	pushfd 				; get new ELFLAGS
 	pop eax 			; store EFLAGS into EAX
-	
-	push 8
-	push teststr
-	mov ax, [check_acflag_string1] 
-						; bp+4
-	push eax
-	call _addressToHex
+
 	mov dx,teststr
 	call printstr
-	
+
 	xor eax, ecx		; cannot toggle AC? it's 386.
 	mov ax, 0
 	jz _end_check_acflag; it's 386.
@@ -121,10 +105,10 @@ check_iopl:
 
 	
 _entry:
-	mov dx, helloworld
-	call printstr
-	mov dx, digifairy_intro
-	call printstr
+	;mov dx, helloworld
+	;call printstr
+	;mov dx, digifairy_intro
+	;call printstr
 	mov dx,debug1
 	call printstr
 _detect_8086:
@@ -140,8 +124,10 @@ _detect_8086:
 	pop ax 				; The 8086 check passed, so we will get this off the stack
 
 	; also this means that this is atleast 186.
-	call check_iopl
-	call check_acflag
+	;call check_iopl
+	mov dx,debug2
+	call printstr
+	call check_acflag 
 	cmp ax,1 ; if ax == 1; that this is 486. because AC exists.
 	je print486
 
@@ -207,3 +193,4 @@ cpu486: 		db `this CPU is an 486.\r\n$`
 cpu486_cpuid:	db `this CPU is an 486,  CPUID capable.\r\n$`
 
 debug1:			db `debug: running 8086 detection\r\n$`
+debug2:			db `debug: running AC flag detection.\r\n$`
